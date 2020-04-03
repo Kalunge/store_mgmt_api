@@ -30,66 +30,21 @@ authorizations = {
     }
 }
 
-# blueprint = Blueprint('StoreAPI', __name__)
+# blueprint = Blueprint('StoreAPI', __name__, url_prefix='/api/home')
 
 
 app.config.from_object(DevelopmentConfigs)
-api = Api(app, version='1.0', title='A store management API', author='Titus Muthomi', authorizations=authorizations)
+api = Api(app, version='1.0', title='A store management API', author='Titus Muthomi', authorizations=authorizations #doc='/doc')
 db = SQLAlchemy(app)
 ma = Marshmallow(app)
 jwt = JWTManager(app)
 from werkzeug.exceptions import NotFound, BadRequest, Unauthorized
 
-
-@jwt.user_claims_loader
-def add_claims(identity):
-    if identity == 1:
-        return {'isAdmin':True}
-    else:
-        return {'isAdmin':False}
-
-@jwt.expired_token_loader
-def token_expiry_callback():
-    return jsonify({
-        'message': 'the token has expired',
-        'errror' : 'token_expired'
-    }), 401
-
-@jwt.invalid_token_loader
-def invalid_token_callback(error):
-    return jsonify({
-        'message': 'signature verification has failed',
-        'errror' : 'invalid_token'
-    }), 401
-
-@jwt.unauthorized_loader
-def missing_token_callback(error):
-    return jsonify({
-        'message': 'that request requires an access token',
-        'errror' : 'authorization_required'
-    })
-
-@jwt.needs_fresh_token_loader
-def needs_refresh_token():
-    return jsonify({
-        'description' :'that request needs a fresh token',
-        'error' :'refresh_token_required'
-    }), 401
-
-@jwt.revoked_token_loader
-def revoked_token_callback():
-    return jsonify({
-        'description' :'that token has been revoked',
-        'error' :'revoked_token'
-    }), 401
-
-@jwt.token_in_blacklist_loader
-def blacklisted_token(decrypted_token):
-    return decrypted_token['jti'] in BLACKLIST
+from JWT.jwt import *
 
 from models.user import UserModel
 from models.store import StoreModel
-from models.item import ItemModel
+from models.item import ItemModel/api/home
 
 @app.before_first_request
 def create_all():
@@ -100,17 +55,7 @@ from resources.user import *
 from resources.store import *
 from resources.item import *
 
-@app.errorhandler(400)
-def Unauthorized(error):
-    return jsonify({'message' :'You are not authorized'})
-
-@app.errorhandler(404)
-def NotFound(error):
-    return jsonify({'message':'the resource you requested is not availabe'})
-
-@app.errorhandler(400)
-def BadRequest(error):
-    return jsonify({'message':'that was a bad request'})
+from Errors.error import *
 
 
 if __name__ == "__main__":

@@ -3,3 +3,4 @@
 /mydatabase.db
 /Pipfile
 /Pipfile.lock
+/__pycache__

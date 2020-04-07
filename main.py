@@ -7,26 +7,27 @@ from werkzeug.exceptions import NotFound, BadRequest, Unauthorized
 from blacklist import BLACKLIST
 from flask_jwt_extended import (
     JWTManager,
-     create_access_token, 
-     jwt_required, 
-     get_jwt_identity, 
-     create_refresh_token,
-     get_jwt_claims,
-     jwt_optional,
-     jwt_refresh_token_required,
-     fresh_jwt_required,
-     get_raw_jwt
-    )
+    create_access_token,
+    jwt_required,
+    get_jwt_identity,
+    create_refresh_token,
+    get_jwt_claims,
+    jwt_optional,
+    jwt_refresh_token_required,
+    fresh_jwt_required,
+    get_raw_jwt,
+)
+from werkzeug.exceptions import NotFound, BadRequest, Unauthorized
 
 
 app = Flask(__name__)
 
 authorizations = {
-    'apikey': {
-        'type': 'apiKey',
-        'in': 'header',
+    "apikey": {
+        "type": "apiKey",
+        "in": "header",
         "name": "Authorization",
-        "description": "Type in the *value into the box below**Bearer & where jwt is token"
+        "description": "Type in the *value into the box below**Bearer & where jwt is token",
     }
 }
 
@@ -34,21 +35,28 @@ authorizations = {
 
 
 app.config.from_object(DevelopmentConfigs)
-api = Api(app, version='1.0', title='A store management API', author='Titus Muthomi', authorizations=authorizations #doc='/doc')
 db = SQLAlchemy(app)
-ma = Marshmallow(app)
+api = Api(
+    app,
+    version="1.0",
+    title="A store management API",
+    author="Titus Muthomi",
+    authorizations=authorizations,
+)  # doc='/doc'
 jwt = JWTManager(app)
-from werkzeug.exceptions import NotFound, BadRequest, Unauthorized
+ma = Marshmallow(app)
 
 from JWT.jwt import *
 
 from models.user import UserModel
 from models.store import StoreModel
-from models.item import ItemModel/api/home
+from models.item import ItemModel
+
 
 @app.before_first_request
 def create_all():
     db.create_all()
+
 
 from resources.register_login import *
 from resources.user import *

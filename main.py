@@ -3,7 +3,7 @@ from flask_restx import Api, Resource, fields
 from flask_sqlalchemy import SQLAlchemy
 from Configs.DbConfig import DevelopmentConfigs
 from flask_marshmallow import Marshmallow
-from werkzeug.exceptions import NotFound, BadRequest, Unauthorized
+from werkzeug.exceptions import NotFound, BadRequest, Unauthorized, InternalServerError
 from blacklist import BLACKLIST
 from flask_jwt_extended import (
     JWTManager,

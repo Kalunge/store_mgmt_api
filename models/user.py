@@ -2,6 +2,10 @@ from main import db, ma
 from sqlalchemy import func
 from werkzeug.security import safe_str_cmp
 from typing import List
+from requests import Response
+import requests
+from flask import request, url_for
+from libs.mailgun import Mailgun
 
 
 class UserModel(db.Model):
@@ -14,6 +18,7 @@ class UserModel(db.Model):
     created_at = db.Column(db.DateTime(timezone=True), default=func.now())
     items = db.relationship("ItemModel", backref="user", lazy=True)
     stores = db.relationship("StoreModel", backref="user", lazy=True)
+    activated = db.Column(db.Boolean, default=False)
 
     def save_to_db(self) -> None:
         db.session.add(self)
@@ -22,6 +27,21 @@ class UserModel(db.Model):
     def delete_from_db(self) -> None:
         db.session.delete(self)
         db.session.commit()
+
+    def send_confirmation_email(self) -> Response:
+        link = f"http://127.0.0.1:5000/confirm/{self.id}"
+        # link = request.url_root[:-1] + url_for("userconfirm", user_id=self.id)
+        subject = "Registration Confirmation"
+        text = f"please click the following link to activate your account {link}"
+
+        return Mailgun.send_email([self.email], subject, text)
+        # return requests.post(
+        #     f"https://api.mailgun.net/v3/{DOMAIN_NAME}/messages",
+        #     auth=("api", API_KEY),
+        #     data={"from": f"{FROM_TITLE} <mailgun@{DOMAIN_NAME}>",
+        #           "to": [self.email, "YOU@{DOMAIN_NAME}"],
+        #           "subject": "Registration Confirmation",
+        #           "text": f"please click the following link to activate your account {link}"})
 
     @classmethod
     def fetch_all(cls) -> "UserModel":
@@ -58,7 +78,7 @@ class UserModel(db.Model):
 
 class UsersSchema(ma.Schema):
     class Meta:
-        fields = ("id", "full_name", "email", "created_at")
+        fields = ("id", "full_name", "email", "created_at", "activated")
 
 
 user_schema = UsersSchema()

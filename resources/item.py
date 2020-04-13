@@ -13,7 +13,6 @@ from models.item import ItemModel, items_schema, item_schema
 from models.user import UserModel
 from typing import List, Dict, Union
 
-itemJson = Dict[str, Union[str, int, float]]
 ITEM_NOT_FOUND = "That item does not exist"
 ALREADY_EXISTS = "an item with that name already exists"
 OPERATION_SUCCESSFUL = " z{} operation successful"
@@ -84,7 +83,7 @@ class Item(Resource):
         item = ItemModel.find_by_id(id)
         if item:
             item.delete_from_db()
-            return {"message": OPERATION_SUCCESSFUL.format('delete')}, 200
+            return {"message": OPERATION_SUCCESSFUL.format("delete")}, 200
         else:
             return {"message": ITEM_NOT_FOUND}, 404
 

@@ -6,6 +6,8 @@ from requests import Response
 import requests
 from flask import request, url_for
 from libs.mailgun import Mailgun
+from models.confirmation import ConfirmationModel
+from marshmallow import pre_dump
 
 
 class UserModel(db.Model):
@@ -18,7 +20,16 @@ class UserModel(db.Model):
     created_at = db.Column(db.DateTime(timezone=True), default=func.now())
     items = db.relationship("ItemModel", backref="user", lazy=True)
     stores = db.relationship("StoreModel", backref="user", lazy=True)
-    activated = db.Column(db.Boolean, default=False)
+    confirmation = db.relationship(
+        "ConfirmationModel",
+        backref="user",
+        lazy="dynamic",
+        cascade="all, delete-orphan",
+    )
+
+    @property
+    def most_recent_confirmation(self) -> "ConfirmationModel":
+        return self.confirmation.order_by(db.desc(ConfirmationModel.expire_at)).first()
 
     def save_to_db(self) -> None:
         db.session.add(self)
@@ -29,19 +40,12 @@ class UserModel(db.Model):
         db.session.commit()
 
     def send_confirmation_email(self) -> Response:
-        link = f"http://127.0.0.1:5000/confirm/{self.id}"
+        link = f"http://127.0.0.1:5000/confirm/{self.most_recent_confirmation.id}"
         # link = request.url_root[:-1] + url_for("userconfirm", user_id=self.id)
         subject = "Registration Confirmation"
         text = f"please click the following link to activate your account {link}"
 
         return Mailgun.send_email([self.email], subject, text)
-        # return requests.post(
-        #     f"https://api.mailgun.net/v3/{DOMAIN_NAME}/messages",
-        #     auth=("api", API_KEY),
-        #     data={"from": f"{FROM_TITLE} <mailgun@{DOMAIN_NAME}>",
-        #           "to": [self.email, "YOU@{DOMAIN_NAME}"],
-        #           "subject": "Registration Confirmation",
-        #           "text": f"please click the following link to activate your account {link}"})
 
     @classmethod
     def fetch_all(cls) -> "UserModel":
@@ -78,7 +82,12 @@ class UserModel(db.Model):
 
 class UsersSchema(ma.Schema):
     class Meta:
-        fields = ("id", "full_name", "email", "created_at", "activated")
+        fields = ("id", "full_name", "email", "created_at", "confirmation")
+
+    @pre_dump
+    def pre_dump(self, user: UserModel):
+        user.confirmation = [user.most_recent_confirmation]
+        return user
 
 
 user_schema = UsersSchema()

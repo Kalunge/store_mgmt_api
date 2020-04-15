@@ -15,6 +15,7 @@ def NotFound(error):
 def BadRequest(error):
     return jsonify({"message": "that was a bad request"})
 
+
 @app.errorhandler(500)
 def InternalServerError(error):
-    return {'message':'oops! something bad happened, its not yor fault though'}
+    return {"message": "oops! something bad happened, its not yor fault though"}

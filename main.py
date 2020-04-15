@@ -51,6 +51,7 @@ from JWT.jwt import *
 from models.user import UserModel
 from models.store import StoreModel
 from models.item import ItemModel
+from models.confirmation import ConfirmationModel
 
 
 @app.before_first_request
@@ -62,6 +63,7 @@ from resources.register_login import *
 from resources.user import *
 from resources.store import *
 from resources.item import *
+from resources.confirmation import *
 
 from Errors.error import *
 

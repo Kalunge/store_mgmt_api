@@ -60,4 +60,6 @@ def revoked_token_callback():
 @jwt.token_in_blacklist_loader
 def blacklisted_token(decrypted_token):
     return decrypted_token["jti"] in BLACKLIST
+
+
 # add

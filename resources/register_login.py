@@ -1,4 +1,3 @@
-from flask import make_response, render_template
 import traceback
 from libs.mailgun import MailgunException
 from main import (
@@ -15,6 +14,7 @@ from main import (
     BLACKLIST,
 )
 from models.user import UserModel, user_schema
+from models.confirmation import ConfirmationModel
 
 register_namespace = api.namespace(
     "register", description="new to our API? kidnly register here"
@@ -24,9 +24,7 @@ refresh_namespace = api.namespace(
 )
 login_namespace = api.namespace("login", description="Registered users may login")
 logout_namespace = api.namespace("logout", description="logged in users may logout")
-confirm_namespace = api.namespace(
-    "confirm", description="confirm newly-registered users"
-)
+
 
 register_model = api.model(
     "Register",
@@ -55,15 +53,18 @@ class UserRegister(Resource):
             user = UserModel(**data)
             try:
                 user.save_to_db()
+                confirmation = ConfirmationModel(user.id)
+                confirmation.save_to_db()
                 user.send_confirmation_email()
                 return {
                     "message": "user created successfuly, we have sent an activation link to your email"
                 }
             except MailgunException as e:
                 user.delete_from_db()
-                return {'message':str(e)}, 500
+                return {"message": str(e)}, 500
             except:
                 traceback.print_exc()
+                user.delete_from_db()
                 return (
                     {"message": "user not created successfully. internal server error"},
                     500,
@@ -81,7 +82,8 @@ class UserLogin(Resource):
         if UserModel.check_email(email) and UserModel.authenticate_password(
             email, data["password"]
         ):
-            if user.activated:
+            confirmation = user.most_recent_confirmation
+            if confirmation and confirmation.confirmed:
                 user_id = UserModel.get_userid(email)
                 access_token = create_access_token(identity=user_id, fresh=True)
                 refresh_token = create_access_token(identity=user_id)
@@ -110,21 +112,3 @@ class RefreshToken(Resource):
         current_userid = get_jwt_identity()
         refresh_token = create_access_token(identity=current_userid, fresh=False)
         return {"access_token": refresh_token}
-
-
-@confirm_namespace.route("/<int:user_id>")
-class UserConfirm(Resource):
-    def get(self, user_id: int):
-        user = UserModel.fetch_by_id(user_id)
-        if user:
-            user.activated = True
-            user.save_to_db()
-            # return redirect("http://localhost:3000/", code=302)  # redirect if we have a separate web app
-            headers = {"Content-Type": "text/html"}
-            return make_response(
-                render_template("confirmation_page.html", email=user.email),
-                200,
-                headers,
-            )
-        else:
-            return {"message": "That user does not exists"}, 404
